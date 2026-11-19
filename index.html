@@ -1,0 +1,425 @@
+﻿<!DOCTYPE html>
+<html lang="he" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>סופר איקס עיגול</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Rubik', sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        /* עיצוב מסך התחברות הרשמה */
+        .auth-box {
+            max-width: 400px;
+            margin: 80px auto;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #38bdf8;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+            text-align: center;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: white;
+            font-size: 16px;
+        }
+
+        .auth-btn {
+            width: 48%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .btn-login {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-register {
+            background: #38bdf8;
+            color: white;
+        }
+
+        /* שאר המחלקות המקוריות שלך */
+        .qwerty {
+            height: 70px;
+            width: 70px;
+            background-color: rgb(35,42,95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+            .qwerty:hover {
+                box-shadow: 0 0 15px #ff4500;
+                transform: scale(1.1);
+                z-index: 1;
+            }
+
+        .skin {
+            width: 200px;
+            height: 200px;
+            object-fit: contain;
+        }
+
+        .skinb {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .tor {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: x-large;
+        }
+
+        .win {
+            position: absolute;
+            height: 500px;
+            width: 500px;
+            background-size: cover;
+            background-position: center;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 50px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .wwww {
+            display: block;
+            height: 50px;
+            width: 100px;
+            font-size: 50px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .sub-btn {
+            font-size: 14px;
+            padding: 8px 16px;
+            width: 80%;
+            cursor: pointer;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            background-color: #1e293b;
+            color: #ffffff;
+        }
+
+        .active-mode {
+            background-color: #22c55e !important;
+            color: #ffffff !important;
+            font-weight: bold;
+        }
+
+        .server_or_not {
+            font-size: 18px;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 10px;
+            border: 2px solid #38bdf8;
+            background-color: #1e293b;
+            color: #ffffff;
+        }
+
+        /* שונה: האיקס/עיגול ממלאים את כל התא (כמו .viewer-mark בתצוגת ההיסטוריה).
+           היה: width ו-height של 70px קבועים, ו-display: inline-block */
+        .pic_players {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .restart {
+            width: 120px;
+            height: 40px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            cursor: pointer;
+            background-color: #22c55e;
+            color: white;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+        }
+
+        /* ===================== חדש: תצוגת הלוח של משחק מההיסטוריה ===================== */
+
+        /* הלוח הגדול: רשת של 3x3 לוחות קטנים */
+        .viewer-big {
+            display: grid;
+            grid-template-columns: repeat(3, 180px);
+            grid-template-rows: repeat(3, 180px); /* תיקון: שורות קבועות, כדי שכל הלוחות הקטנים יהיו באותו גודל */
+            gap: 6px;
+            background: #38bdf8; /* הצבע שנראה בין הלוחות הקטנים */
+            padding: 6px;
+            border-radius: 12px;
+        }
+
+        /* לוח קטן: רשת של 3x3 תאים. position: relative כדי שהשכבה של הניצחון תוכל להתמקם מעליו */
+        .viewer-small {
+            position: relative;
+            display: grid;
+            /* תיקון: גם עמודות וגם שורות קבועות ושוות (minmax(0, 1fr)),
+               אחרת תמונה בתא מנפחת את השורה שלה לפי הגודל הטבעי שלה והשורות הריקות מתכווצות */
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-rows: repeat(3, minmax(0, 1fr));
+            gap: 2px;
+            width: 180px;
+            height: 180px;
+            background: #0f172a;
+        }
+
+        /* תא בודד בלוח קטן */
+        .viewer-cell {
+            background: rgb(35, 42, 95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* תיקון: מונע מתוכן התא (התמונה) לדחוף את גודל התא */
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* האיקס / עיגול עצמו (בתוך תא, או בשכבת הניצחון) */
+        .viewer-mark {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block; /* תיקון: מבטל רווח קטן מתחת לתמונה (התנהגות inline) */
+        }
+
+        /* שכבת הניצחון: איקס/עיגול גדול שמכסה את כל הלוח הקטן שנוצח */
+        .viewer-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgb(35, 42, 95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+            .viewer-overlay:hover {
+                opacity: 0; /* הבונוס: בהובר השכבה נעלמת ורואים מה היה בלוח הקטן לפני הניצחון */
+            }
+
+        /* ===================== חדש: כפתורי השליטה של ה-Replay (התחלה / קודם / הבא) ===================== */
+
+        /* חדש: מסגרת צהובה סביב התא של המהלך האחרון, כדי שיהיה קל לראות מה השתנה בלחיצה האחרונה.
+           outline-offset שלילי = המסגרת נמצאת בתוך התא, כך ש-overflow: hidden של התא לא חותך אותה */
+        .viewer-last {
+            outline: 3px solid #facc15;
+            outline-offset: -3px;
+        }
+
+        /* חדש: שורה שמסדרת את שני הכפתורים והמונה זה לצד זה, ממורכזים מתחת ללוח */
+        .replay-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 14px;
+            direction: ltr; /* חדש: הדף הוא RTL, אבל כאן רוצים ש-Prev יהיה משמאל ו-Next מימין כמו חיצים רגילים */
+        }
+
+        /* חדש: עיצוב כפתור שליטה אחד, באותו סגנון של שאר הכפתורים במשחק */
+        .replay-btn {
+            font-size: 16px;
+            font-weight: bold;
+            padding: 10px 18px;
+            cursor: pointer;
+            border: 2px solid #38bdf8;
+            border-radius: 10px;
+            background-color: #1e293b;
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+            .replay-btn:hover:not(:disabled) {
+                background-color: #38bdf8; /* חדש: בהובר הכפתור נצבע בכחול */
+            }
+
+            /* חדש: כפתור מושבת (למשל Prev כשהלוח ריק) נראה דהוי ולא מגיב */
+            .replay-btn:disabled {
+                opacity: 0.35;
+                cursor: not-allowed;
+            }
+
+        /* חדש: הטקסט שמראה באיזה מהלך אנחנו (למשל Move 5 / 30). רוחב מינימלי כדי שהכפתורים לא יקפצו כשהמספר משתנה */
+        .replay-counter {
+            min-width: 110px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        /* ===================== חדש: מחלקה להסתרת אלמנטים ===================== */
+
+        /* משמשת את הפונקציה setVisible ב-index.js כדי להסתיר/להציג אלמנטים.
+           !important כדי שזה ינצח גם אלמנט שיש לו display בתוך ה-HTML עצמו (כמו play-area) */
+        .hidden {
+            display: none !important;
+        }
+
+        /* ===================== חדש: עיצוב הלוח של המשחק (נבנה על אותן מחלקות של תצוגת ההיסטוריה) ===================== */
+
+        /* הלוח הגדול של המשחק: אותו עיצוב כמו viewer-big, רק בגודל של המשחק.
+           fit-content + margin auto = הלוח ממורכז במסך */
+        .game-big {
+            grid-template-columns: repeat(3, 210px);
+            grid-template-rows: repeat(3, 210px);
+            width: fit-content;
+            margin: 0 auto;
+        }
+
+        /* לוח קטן במשחק: גודל זהה לעמודה/שורה של הלוח הגדול (אפשר לשנות את 210px בשלושת המקומות) */
+        .game-small {
+            width: 210px;
+            height: 210px;
+        }
+
+        /* הכפתור ממלא את כל התא (במקום 70px קבועים) */
+        .viewer-cell .qwerty {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* במשחק לא חותכים את הכפתור כשהוא מתגדל בהובר (scale של .qwerty:hover) */
+        .game-big .viewer-cell {
+            overflow: visible;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. מסך התחברות / הרשמה ראשוני -->
+    <div id="auth-screen" class="auth-box">
+        <h2>התחברות למשחק</h2>
+        <input type="text" id="username" class="auth-input" placeholder="שם משתמש" />
+        <input type="password" id="password" class="auth-input" placeholder="סיסמה" />
+        <div style="display: flex; justify-content: space-between;">
+            <button class="auth-btn btn-login" onclick="loginUser()">התחבר</button>
+            <button class="auth-btn btn-register" onclick="registerUser()">הרשם</button>
+        </div>
+        <!-- חדש: כפתור כניסה כאורח. הוא לא דורש שם משתמש וסיסמה, ולחיצה עליו קוראת לפונקציה guestLogin בקובץ index.js -->
+        <button class="auth-btn" style="width: 100%; background: #64748b; color: white;" onclick="guestLogin()">המשך כאורח</button>
+        <!-- הסבר על העיצוב: class="auth-btn" נותן לו את עיצוב הכפתורים של המסך, width:100% מותח אותו לכל רוחב התיבה (בשונה משני הכפתורים האחרים שהם 48%), ו-background אפור נותן לו צבע שונה משני האחרים -->
+        <p id="auth-msg" style="color: #ef4444; margin-top: 10px;"></p>
+    </div>
+
+    <!-- 2. מסך המשחק הראשי (מוסתר עד לאחר ההתחברות) -->
+    <div id="game-container" style="display: none;">
+        <div style="text-align: left; padding: 10px;">
+            <span>שלום, <strong id="logged-user-display" style="color: #38bdf8;"></strong>!</span>
+            <!-- חדש: שני כפתורי הטבלאות עטופים ב-span עם id, כדי שאפשר יהיה להסתיר רק אותם (ולא את ה"שלום") -->
+            <span id="table-buttons">
+                <button class="sub-btn" style="width: auto; margin-left: 10px;" onclick="loadUsersTable()">📋 טבלת משתמשים</button>
+                <button class="sub-btn" style="width: auto; margin-left: 5px;" onclick="loadHistoryTable()">🏆 היסטוריית משחקים</button>
+            </span>
+        </div>
+
+        <div id="tables-display" style="display: flex; justify-content: center; margin: 10px 0;"></div>
+
+        <!-- חדש: כאן מוצג הלוח של משחק מהיסטוריה (נמלא ע"י showGameBoard ב-index.js) -->
+        <div id="board-viewer" style="display: flex; flex-direction: column; align-items: center; margin: 10px 0;"></div>
+
+        <!-- שונה: לכפתור חזור נוסף id, והוא מוסתר (hidden) במסך ההתחלתי.
+         הוא מופיע רק אחרי שלוחצים על טבלה או מתחילים משחק (ראה openTableView ו-f ב-index.js) -->
+        <button id="back-btn" class="back-btn hidden" onclick="resetGame()">↩ back</button>
+
+        <span id="win" class="win"></span>
+        <span id="www" class="wwww"></span>
+
+        <center id="mode-selector">
+            <h2>Select a game mode (before selecting a skin):</h2>
+            <button id="btn-vs-cpu" onclick="selectCpuMode()" class="server_or_not active-mode">Play VS computer</button>
+            <button id="btn-1v1" onclick="toggle1v1SubMenu()" class="server_or_not">Play one VS one</button>
+
+            <div id="sub-menu-1v1" style="display: none; margin-top: 8px; flex-direction: column; gap: 5px; align-items: center;">
+                <button id="btn-online" class="sub-btn active-mode" onclick="set1v1Mode('online')">Online (Server)</button>
+                <button id="btn-local" class="sub-btn" onclick="set1v1Mode('local')">Same Screen (Local)</button>
+            </div>
+        </center>
+
+        <!-- שונה: ל-div שעוטף את אזור הלוח ובחירת הסקין נוסף id="play-area", כדי שאפשר יהיה להסתיר אותו כשמציגים טבלה -->
+        <div id="play-area" style="position: relative; display: flex; justify-content: center; align-items: center; width: 100%;">
+            <span class="tor" style="left: 20px;" id="tor"></span>
+            <span class="tor" style="color: #ef4444; right: 20px; font-size: 100px;" id="error"></span>
+
+            <center id="play">
+                <br /><br />
+                <span onclick="bodi()" style="font-size:x-large;">w</span><span style="font-size:x-large">hich skin do you </span><span onclick="tomjery()" style="font-size:x-large">want</span><span onclick="namer()" style="font-size:x-large;">?</span>
+                <br /><br />
+                <span>
+                    <button class="skinb" onclick="xo()">
+                        <img class="skin" src="static/pic to xo o.webp" />
+                        <img class="skin" src="static/pic to xo x.webp" />
+                    </button>
+                    <br /><br />
+                    <button class="skinb" onclick="basc()">
+                        <img class="skin" src="static/pic to xo fut.webp" />
+                        <img class="skin" src="static/pic to xo basc.webp" />
+                    </button>
+                </span>
+            </center>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="/static/index.js"></script>
+</body>
+</html>
