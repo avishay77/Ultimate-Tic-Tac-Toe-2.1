@@ -1,3 +1,4 @@
+# -*- coding: cp1255 -*-
 import sqlite3
 
 DB_NAME = 'cyber_game.db'
